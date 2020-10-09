@@ -13,7 +13,7 @@ const ListItem = props => {
 
     return (
         <View>
-            <TouchableOpacity onPress={() => onPress(item)}>
+            <TouchableOpacity>
                 <View style={styles.itemContainer}>
                     <View style={styles.rightSectionContainer}>
                         <View style={styles.mainTitleContainer}>
@@ -32,13 +32,14 @@ const ListItem = props => {
     );
 };
 
+
 const styles = StyleSheet.create({
     itemContainer: {
         flexDirection: 'row',
         minHeight: 44,
-        height: 100,
-        // paddingTop: 10,
-        // paddingBottom: 10
+        // height: 100,
+        paddingTop: 5,
+        paddingBottom: 5
     },
     leftElementContainer: {
         justifyContent: 'center',
